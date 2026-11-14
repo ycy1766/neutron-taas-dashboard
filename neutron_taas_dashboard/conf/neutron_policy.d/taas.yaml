@@ -1,0 +1,23 @@
+# Tap-as-a-Service rules for Horizon.
+#
+# Horizon decides whether to show the Create / Delete buttons with its own
+# copy of the Neutron policy. Its default neutron policy file has no TaaS
+# rules, so without this file every rule below falls back to the "default"
+# rule (admin_or_owner) and a project reader sees buttons that the server
+# will reject. Point POLICY_DIRS['network'] at this directory (an absolute
+# path works; a relative one is joined to POLICY_FILES_PATH), for example:
+#
+#   POLICY_DIRS = {'network': ['/var/lib/openstack/lib/python3.12/'
+#                              'site-packages/neutron_taas_dashboard/conf/'
+#                              'neutron_policy.d']}
+#
+# or merge the rules into the chart's conf.horizon.policy.network.
+#
+# The check strings mirror neutron_taas/policies/tap_mirror.py. "get" also
+# accepts "member" because Horizon only sees the roles of the token and a
+# token without the implied "reader" role would otherwise hide the panel
+# content from members.
+"create_tap_mirror": "rule:admin_only or (role:member and project_id:%(project_id)s)"
+"update_tap_mirror": "rule:admin_only or (role:member and project_id:%(project_id)s)"
+"get_tap_mirror": "rule:admin_only or ((role:reader or role:member) and project_id:%(project_id)s)"
+"delete_tap_mirror": "rule:admin_only or (role:member and project_id:%(project_id)s)"

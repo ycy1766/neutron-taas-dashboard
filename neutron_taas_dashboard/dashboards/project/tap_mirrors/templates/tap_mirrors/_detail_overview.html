@@ -1,0 +1,38 @@
+{% load i18n %}
+
+<div class="detail">
+  <dl class="dl-horizontal">
+    <dt>{% trans "Name" %}</dt>
+    <dd>{{ tap_mirror.name|default:_("-") }}</dd>
+
+    <dt>{% trans "ID" %}</dt>
+    <dd>{{ tap_mirror.id }}</dd>
+
+    <dt>{% trans "Description" %}</dt>
+    <dd>{{ tap_mirror.description|default:_("-") }}</dd>
+
+    <dt>{% trans "Project ID" %}</dt>
+    <dd>{{ tap_mirror.project_id|default:tap_mirror.tenant_id }}</dd>
+
+    <dt>{% trans "Type" %}</dt>
+    <dd>{{ tap_mirror.mirror_type }}</dd>
+
+    <dt>{% trans "Source Port" %}</dt>
+    {% url 'horizon:project:networks:ports:detail' tap_mirror.port_id as port_url %}
+    <dd><a href="{{ port_url }}">{{ tap_mirror.port_display|default:tap_mirror.port_id }}</a></dd>
+
+    <dt>{% trans "Collector Port" %}</dt>
+    {% if tap_mirror.remote_port_id %}
+      {% url 'horizon:project:networks:ports:detail' tap_mirror.remote_port_id as remote_port_url %}
+      <dd><a href="{{ remote_port_url }}">{{ tap_mirror.remote_port_display|default:tap_mirror.remote_port_id }}</a></dd>
+    {% else %}
+      <dd>{% trans "-" %}</dd>
+    {% endif %}
+
+    <dt>{% trans "Remote IP" %}</dt>
+    <dd>{{ tap_mirror.remote_ip|default:_("-") }}</dd>
+
+    <dt>{% trans "Direction" %}</dt>
+    <dd>{{ tap_mirror.direction_display }}</dd>
+  </dl>
+</div>

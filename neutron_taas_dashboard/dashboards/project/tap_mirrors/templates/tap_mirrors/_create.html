@@ -1,0 +1,10 @@
+{% extends "horizon/common/_modal_form.html" %}
+{% load i18n %}
+
+{% block modal-body-right %}
+  <h3>{% trans "Description:" %}</h3>
+  <p>{% trans "Copy the traffic of one VM port (source) to another VM port of this project (collector)." %}</p>
+  <p>{% trans "Egress traffic is copied before the security groups of the source port are applied, ingress traffic after. The copies bypass the security groups, QoS and connection tracking of the collector port." %}</p>
+  <p>{% trans "Source port, collector port and direction can not be changed later: delete the tap mirror and create a new one instead." %}</p>
+  <p>{% trans "A successful creation means the mirror was recorded. It does not confirm that packets are being delivered." %}</p>
+{% endblock %}
