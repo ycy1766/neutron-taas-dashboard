@@ -1,11 +1,17 @@
 *.py[cod]
-__pycache__/
-*.egg-info/
+*.swp
+*.egg*/
+.coverage
 .tox/
 .venv/
 build/
-dist/
 cover/
-.coverage
+dist/
+doc/build/
+releasenotes/build/
 AUTHORS
 ChangeLog
+
+# Translation catalogs
+*.mo
+*.pot

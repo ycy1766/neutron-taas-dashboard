@@ -9,11 +9,17 @@ jobs:
   test:
     runs-on: ubuntu-24.04
     strategy:
+      fail-fast: false
       matrix:
         include:
+          # Horizon 2025.1 (Epoxy): python-neutronclient path.
           - python: "3.12"
             constraints: https://opendev.org/openstack/requirements/raw/tag/2025.1-eom/upper-constraints.txt
             horizon: "25.3.2"
+          # Latest Horizon release: openstacksdk path.
+          - python: "3.12"
+            constraints: https://opendev.org/openstack/requirements/raw/branch/master/upper-constraints.txt
+            horizon: "27.0.0"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -30,5 +36,24 @@ jobs:
           pip install --no-deps -e .
       - name: flake8
         run: flake8 .
+      - name: Translation catalog check
+        run: python manage.py extract_messages --module neutron_taas_dashboard --verbosity 0 --check-only
       - name: Unit tests
         run: python manage.py test neutron_taas_dashboard --settings=neutron_taas_dashboard.test.settings
+  docs:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # reno reads the git history
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install doc requirements
+        run: |
+          curl -fsSL -o /tmp/uc.txt https://opendev.org/openstack/requirements/raw/branch/master/upper-constraints.txt
+          pip install -c /tmp/uc.txt -r doc/requirements.txt
+      - name: Build docs
+        run: sphinx-build -W -b html doc/source doc/build/html
+      - name: Build release notes
+        run: sphinx-build -a -E -W -d releasenotes/build/doctrees -b html releasenotes/source releasenotes/build/html

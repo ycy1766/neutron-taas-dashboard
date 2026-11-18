@@ -1,55 +1,30 @@
-==================
-neutron-taas-dashboard
-==================
+======================
+Neutron TaaS Dashboard
+======================
 
-Horizon plugin that adds a **Project > Network > Tap Mirrors** panel for the
-Tap-as-a-Service ``tap_mirrors`` API.
+OpenStack Dashboard panels for Neutron Tap-as-a-Service (TaaS) tap mirrors.
 
-First version (this scaffold)
------------------------------
+* Documentation: ``doc/source`` (``tox -e docs``)
+* Source: https://github.com/ycy1766/neutron-taas-dashboard
+* Bugs: https://github.com/ycy1766/neutron-taas-dashboard/issues
+* Release Notes: ``releasenotes`` (``tox -e releasenotes``)
 
-* ``lport`` tap mirrors only: copy the traffic of one VM port to another VM
-  port of the same project (``tap-mirror-lport`` extension).
-* List, create, show and delete. Source port, collector port and direction
-  can not be changed after creation (only name and description can), so the
-  first version has no edit form: delete and create again.
-* No status column. The API reports that the mirror was recorded, not that
-  the backend is forwarding packets.
-* Only ``compute:*`` ports are offered as source and collector. This is a
-  deliberate UI restriction of the first version, not a server rule.
-* Port labels show the server name. Nova returns at most ``osapi_max_limit``
-  servers (1000 by default) for the one list call made here, so in a larger
-  project some ports are labelled with the server id instead. Port selection
-  itself is not affected.
-* All Neutron calls live in ``neutron_taas_dashboard/api/taas.py`` and use the
-  generic ``python-neutronclient`` HTTP methods, because Horizon 2025.1 still
-  builds that client and openstacksdk 4.4.1 does not know ``remote_port_id``
-  as a first-class attribute. Switching to ``api.neutron.networkclient``
-  later touches this module only.
+The project is maintained on GitHub, outside of OpenStack, and follows the
+layout and conventions of the OpenStack Horizon plugins (for example
+``neutron-vpnaas-dashboard``) so that it builds, tests and documents the
+same way. See ``CONTRIBUTING.rst``.
 
-Enable
-------
+Features
+--------
 
-Install the package into the Horizon virtualenv and copy (or link)
-``neutron_taas_dashboard/enabled/_7200_project_tap_mirrors_panel.py`` to
-``openstack_dashboard/local/enabled/``. With the openstack-helm Horizon
-chart this happens automatically when ``neutron_taas_dashboard`` is listed
-in ``conf.horizon.extra_panels`` (it is in the chart defaults).
+* **Project > Network > Tap Mirrors** panel: list, create, show and delete
+  ``lport`` tap mirrors, which copy the traffic of one VM port to another
+  VM port of the same project (``tap-mirror-lport`` Neutron extension).
+* Port choices show the server, network, IP addresses and port name instead
+  of bare UUIDs.
+* The panel is only shown when Neutron advertises the extension; the Create
+  and Delete actions follow the ``create_tap_mirror`` and
+  ``delete_tap_mirror`` policy rules.
 
-The panel is shown when Neutron advertises the ``tap-mirror-lport``
-extension and ``OPENSTACK_NEUTRON_NETWORK['enable_taas']`` is not
-``False``. That only decides visibility. Whether the user may create or
-delete is decided by the Neutron policy on the server, and Horizon hides the
-buttons by its own copy of that policy: point ``POLICY_DIRS['network']`` at
-``neutron_taas_dashboard/conf/neutron_policy.d`` (or merge its rules into the
-chart's ``conf.horizon.policy.network``), otherwise the buttons
-are shown to every project member and reader (Horizon falls back to its
-``default`` rule) and a reader gets an error from the server instead.
-
-Tests
------
-
-::
-
-    tox -e py3
-    tox -e pep8
+See the installation and configuration guides under ``doc/source`` for the
+requirements, the policy file and the limits of the current version.

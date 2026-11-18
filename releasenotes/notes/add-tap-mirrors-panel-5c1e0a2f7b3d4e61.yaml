@@ -1,0 +1,22 @@
+---
+prelude: >
+    First version of the Neutron TaaS Dashboard, a horizon plugin for the
+    Tap-as-a-Service ``tap_mirrors`` API.
+features:
+  - |
+    Add the **Project > Network > Tap Mirrors** panel to list, create, show
+    and delete ``lport`` tap mirrors, which copy the traffic of one VM port
+    to another VM port of the same project. The panel is shown when Neutron
+    advertises the ``tap-mirror-lport`` extension.
+  - |
+    Ship the Tap-as-a-Service policy rules for horizon in
+    ``neutron_taas_dashboard/conf/neutron_policy.d/taas.yaml``. Add that
+    directory to ``POLICY_DIRS['network']`` so that the Create and Delete
+    actions follow the ``create_tap_mirror`` and ``delete_tap_mirror``
+    rules.
+issues:
+  - |
+    Only ``lport`` tap mirrors are managed; ``gre`` and ``erspanv1``
+    mirrors are shown read-only. Only ``compute:*`` ports are offered as
+    source and collector, and the server name of a port comes from a single
+    Nova list call capped at ``osapi_max_limit``.
