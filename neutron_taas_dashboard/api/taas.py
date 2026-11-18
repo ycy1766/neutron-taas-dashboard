@@ -12,10 +12,11 @@
 
 """All Neutron (TaaS) calls of the plugin.
 
-This is the only module that talks to Neutron. It uses the generic HTTP
-methods of ``python-neutronclient`` that Horizon 2025.1 still builds in
-``openstack_dashboard.api.neutron.neutronclient``. Switching to the
-openstacksdk based ``networkclient`` later only touches this module.
+This is the only module that talks to Neutron. Horizon up to 2025.1 builds
+a ``python-neutronclient`` client (``api.neutron.neutronclient``); later
+releases only have the openstacksdk based ``api.neutron.networkclient``.
+Both are supported: the neutronclient path uses the generic HTTP methods,
+the SDK path the ``tap_mirror`` proxy methods of openstacksdk >= 4.4.
 """
 
 import logging
@@ -35,6 +36,9 @@ MIRROR_TYPE_LPORT = 'lport'
 
 TAP_MIRRORS_PATH = '/taas/tap_mirrors'
 TAP_MIRROR_PATH = TAP_MIRRORS_PATH + '/%s'
+# Query parameters the openstacksdk TapMirror resource accepts; the other
+# filters are applied locally on the SDK path.
+SDK_QUERY_PARAMS = ('name', 'project_id', 'sort_key', 'sort_dir')
 
 # Keys of the ``directions`` attribute. For an ``lport`` mirror the values
 # (tunnel ids) are always null; only the keys select the directions.
@@ -89,28 +93,50 @@ def is_supported(request):
         return False
 
 
+def _use_neutronclient():
+    """True on Horizon releases that still build python-neutronclient."""
+    return hasattr(neutron, 'neutronclient')
+
+
 def tap_mirror_list(request, **params):
-    client = neutron.neutronclient(request)
-    body = client.list_ext('tap_mirrors', TAP_MIRRORS_PATH,
-                           retrieve_all=True, **params)
-    return [TapMirror(m) for m in body.get('tap_mirrors', [])]
+    if _use_neutronclient():
+        client = neutron.neutronclient(request)
+        body = client.list_ext('tap_mirrors', TAP_MIRRORS_PATH,
+                               retrieve_all=True, **params)
+        return [TapMirror(m) for m in body.get('tap_mirrors', [])]
+    query = {k: v for k, v in params.items() if k in SDK_QUERY_PARAMS}
+    local = {k: v for k, v in params.items() if k not in SDK_QUERY_PARAMS}
+    mirrors = [TapMirror(m.to_dict())
+               for m in neutron.networkclient(request).tap_mirrors(**query)]
+    return [m for m in mirrors
+            if all(m._apidict.get(k) == v for k, v in local.items())]
 
 
 def tap_mirror_get(request, tap_mirror_id):
-    client = neutron.neutronclient(request)
-    body = client.show_ext(TAP_MIRROR_PATH, tap_mirror_id)
-    return TapMirror(body['tap_mirror'])
+    if _use_neutronclient():
+        client = neutron.neutronclient(request)
+        body = client.show_ext(TAP_MIRROR_PATH, tap_mirror_id)
+        return TapMirror(body['tap_mirror'])
+    mirror = neutron.networkclient(request).get_tap_mirror(tap_mirror_id)
+    return TapMirror(mirror.to_dict())
 
 
 def tap_mirror_create(request, **attrs):
-    client = neutron.neutronclient(request)
-    body = client.create_ext(TAP_MIRRORS_PATH, {'tap_mirror': attrs})
-    return TapMirror(body['tap_mirror'])
+    if _use_neutronclient():
+        client = neutron.neutronclient(request)
+        body = client.create_ext(TAP_MIRRORS_PATH, {'tap_mirror': attrs})
+        return TapMirror(body['tap_mirror'])
+    mirror = neutron.networkclient(request).create_tap_mirror(**attrs)
+    return TapMirror(mirror.to_dict())
 
 
 def tap_mirror_delete(request, tap_mirror_id):
-    client = neutron.neutronclient(request)
-    client.delete_ext(TAP_MIRROR_PATH, tap_mirror_id)
+    if _use_neutronclient():
+        client = neutron.neutronclient(request)
+        client.delete_ext(TAP_MIRROR_PATH, tap_mirror_id)
+        return
+    neutron.networkclient(request).delete_tap_mirror(tap_mirror_id,
+                                                     ignore_missing=False)
 
 
 def lport_mirror_create(request, name, description, port_id,
