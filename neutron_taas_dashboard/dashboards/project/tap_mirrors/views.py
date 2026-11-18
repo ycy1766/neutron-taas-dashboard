@@ -10,14 +10,17 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from django import shortcuts
 from django.urls import reverse
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 from horizon import exceptions
 from horizon import forms as horizon_forms
+from horizon import messages
 from horizon import tables as horizon_tables
 from horizon import tabs as horizon_tabs
 from horizon.utils import memoized
+from openstack_dashboard import policy
 
 from neutron_taas_dashboard.api import taas as api_taas
 from neutron_taas_dashboard.dashboards.project.tap_mirrors import forms
@@ -51,6 +54,17 @@ class CreateView(horizon_forms.ModalFormView):
     submit_url = reverse_lazy("horizon:project:tap_mirrors:create")
     success_url = reverse_lazy("horizon:project:tap_mirrors:index")
     page_title = _("Create Tap Mirror")
+    policy_rules = (("network", "create_tap_mirror"),)
+
+    def dispatch(self, request, *args, **kwargs):
+        # The table only hides the button; check the same rule here so a
+        # direct GET/POST of this URL is refused with a message as well.
+        # The Neutron policy on the server remains the authority.
+        if not policy.check(self.policy_rules, request):
+            messages.error(request,
+                           _('You are not allowed to create tap mirrors.'))
+            return shortcuts.redirect(self.success_url)
+        return super().dispatch(request, *args, **kwargs)
 
 
 class DetailView(horizon_tabs.TabView):
